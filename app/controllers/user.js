@@ -4,16 +4,35 @@ const User = require('../models/User');
 const passwordValidator = require('../middleware/password-validator');
 const jwt = require("jsonwebtoken");
 
+/**
+ * Permet la création des roles 'root' et 'admin' pour deux mail bien disctinct
+ * TODO: En production permettre la configuration dans le fichier .env par exemple
+ * @param email
+ * @return {string}
+ */
+const roles = (email) => {
+  switch (email) {
+      case 'root@local.dev':
+          return 'root';
+      case 'admin@local.dev':
+          return 'admin';
+      default:
+          return 'user';
+  }
+};
+
 // Création d'un nouvel utilisateur
 exports.signup = (req, res) => {
     if (passwordValidator.validate(req.body.password)) {
         bcrypt.hash(req.body.password, 10)
-            .then(hash => {
+            .then((hash = null) => {
                 const user = new User({
                     email: req.body.email,
-                    password: hash
+                    password: hash,
+                    role: roles(req.body.email)
                 });
-                User.save()
+                user.createIndex('user_id', { unique: true });
+                user.save()
                     .then(() => res.status(201).json({ message: 'Utilisateur créé !'}))
                     .catch(() => res.status(400).json({ message: 'Adresse e-mail déjà utilisée'}));
             })
